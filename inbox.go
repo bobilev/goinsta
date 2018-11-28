@@ -55,9 +55,10 @@ type Inbox struct {
 	UnseenCountTs       int64  `json:"unseen_count_ts"`
 	BlendedInboxEnabled bool   `json:"blended_inbox_enabled"`
 	// this fields are copied from response
-	SeqID                int64 `json:"seq_id"`
-	PendingRequestsTotal int   `json:"pending_requests_total"`
-	SnapshotAtMs         int64 `json:"snapshot_at_ms"`
+	SeqID                int64             `json:"seq_id"`
+	PendingRequestsTotal int               `json:"pending_requests_total"`
+	SnapshotAtMs         int64             `json:"snapshot_at_ms"`
+	MostRecentInviter    MostRecentInviter `json:"most_recent_inviter"`
 }
 
 type inboxResp struct {
@@ -66,8 +67,19 @@ type inboxResp struct {
 	PendingRequestsTotal int    `json:"pending_requests_total"`
 	SnapshotAtMs         int64  `json:"snapshot_at_ms"`
 	Status               string `json:"status"`
+	MostRecentInviter    MostRecentInviter `json:"most_recent_inviter"`
 }
-
+type MostRecentInviter struct {
+	Pk                         int    `json:"pk"`
+	Username                   string `json:"username"`
+	FullName                   string `json:"full_name"`
+	IsPrivate                  bool   `json:"is_private"`
+	ProfilePicUrl              string `json:"profile_pic_url"`
+	ProfilePicId               string `json:"profile_pic_id"`
+	IsVerified                 bool   `json:"is_verified"`
+	HasAnonymousProfilePicture bool   `json:"has_anonymous_profile_picture"`
+	ReelAutoArchive            string `json:"reel_auto_archive"`
+}
 func newInbox(inst *Instagram) *Inbox {
 	return &Inbox{inst: inst}
 }
@@ -92,9 +104,10 @@ func (inbox *Inbox) Sync() error {
 		if err == nil {
 			*inbox = resp.Inbox
 			inbox.inst = insta
-			inbox.SeqID = resp.Inbox.SeqID
-			inbox.PendingRequestsTotal = resp.Inbox.PendingRequestsTotal
-			inbox.SnapshotAtMs = resp.Inbox.SnapshotAtMs
+			inbox.SeqID = resp.SeqID
+			inbox.PendingRequestsTotal = resp.PendingRequestsTotal
+			inbox.SnapshotAtMs = resp.SnapshotAtMs
+			inbox.MostRecentInviter = resp.MostRecentInviter
 			for i := range inbox.Conversations {
 				inbox.Conversations[i].inst = insta
 				inbox.Conversations[i].firstRun = true
@@ -163,9 +176,10 @@ func (inbox *Inbox) Next() bool {
 		if err == nil {
 			*inbox = resp.Inbox
 			inbox.inst = insta
-			inbox.SeqID = resp.Inbox.SeqID
-			inbox.PendingRequestsTotal = resp.Inbox.PendingRequestsTotal
-			inbox.SnapshotAtMs = resp.Inbox.SnapshotAtMs
+			inbox.SeqID = resp.SeqID
+			inbox.PendingRequestsTotal = resp.PendingRequestsTotal
+			inbox.SnapshotAtMs = resp.SnapshotAtMs
+			inbox.MostRecentInviter = resp.MostRecentInviter
 			for i := range inbox.Conversations {
 				inbox.Conversations[i].inst = insta
 				inbox.Conversations[i].firstRun = true
@@ -209,11 +223,9 @@ type Conversation struct {
 	Inviter                   User        `json:"inviter"`
 	HasOlder                  bool        `json:"has_older"`
 	HasNewer                  bool        `json:"has_newer"`
-	LastSeenAt                struct {
-		Num7629421016 struct {
-			Timestamp string `json:"timestamp"`
-			ItemID    string `json:"item_id"`
-		} `json:"7629421016"`
+	LastSeenAt                map[string]struct {
+		Timestamp string `json:"timestamp"`
+		ItemID    string `json:"item_id"`
 	} `json:"last_seen_at"`
 	NewestCursor      string `json:"newest_cursor"`
 	OldestCursor      string `json:"oldest_cursor"`
